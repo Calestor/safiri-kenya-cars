@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				kenya: {
+					'red': '#E52A34',
+					'green': '#228B22',
+					'gold': '#FFCD00',
+					'black': '#000000',
+					'white': '#FFFFFF',
 				}
 			},
 			borderRadius: {
@@ -84,12 +92,20 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'float': 'float 3s ease-in-out infinite',
+			},
+			fontFamily: {
+				sans: ['Inter var', 'sans-serif'],
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
