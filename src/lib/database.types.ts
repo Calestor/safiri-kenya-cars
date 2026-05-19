@@ -12,6 +12,7 @@ export interface Database {
           driver_license_url: string | null;
           id_number: string | null;
           role: 'renter' | 'owner' | 'admin';
+          is_active: boolean | null;
           created_at: string;
         };
         Insert: {
@@ -22,6 +23,7 @@ export interface Database {
           driver_license_url?: string | null;
           id_number?: string | null;
           role?: 'renter' | 'owner' | 'admin';
+          is_active?: boolean | null;
           created_at?: string;
         };
         Update: {
@@ -31,6 +33,7 @@ export interface Database {
           driver_license_url?: string | null;
           id_number?: string | null;
           role?: 'renter' | 'owner' | 'admin';
+          is_active?: boolean | null;
         };
       };
       cars: {
