@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Bell, Calendar, Car, Loader2, Phone, Plus, Shield, Star, ToggleLeft, ToggleRight, User, X } from "lucide-react";
+import { ArrowRight, Bell, Calendar, Car, Loader2, Phone, Plus, Shield, Star, ToggleLeft, ToggleRight, User, X } from "lucide-react";
 import { format } from "date-fns";
 
 const statusColor: Record<string, string> = {
@@ -17,6 +17,20 @@ const statusColor: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
   completed: "bg-blue-100 text-blue-800",
 };
+
+const paymentStatusColor = (paymentStatus?: string | null) => {
+  if (!paymentStatus || paymentStatus === "unpaid") return "bg-orange-100 text-orange-800";
+  if (paymentStatus === "paid") return "bg-green-100 text-green-800";
+  return "bg-red-100 text-red-800";
+};
+
+const paymentStatusLabel = (paymentStatus?: string | null) => {
+  if (!paymentStatus || paymentStatus === "unpaid") return "Payment Pending";
+  if (paymentStatus === "paid") return "Paid ✓";
+  return "Payment Failed";
+};
+
+const isPaymentPending = (paymentStatus?: string | null) => !paymentStatus || paymentStatus === "unpaid";
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -45,7 +59,11 @@ const Dashboard = () => {
       setDataLoading(true);
 
       const [bookingsRes, carsRes] = await Promise.all([
-        supabase.from("bookings").select("*, cars(title, image, location)").eq("renter_id", user.id).order("created_at", { ascending: false }),
+        supabase
+          .from("bookings")
+          .select("id, car_id, renter_id, start_date, end_date, total_price, status, created_at, payment_status, payment_method, commission_amount, owner_payout_amount, cars(title, image, location)")
+          .eq("renter_id", user.id)
+          .order("created_at", { ascending: false }),
         supabase.from("cars").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }),
       ]);
 
@@ -136,17 +154,17 @@ const Dashboard = () => {
       setDataLoading(false);
     };
 
-    load();
+    void load();
 
     const channel = supabase
       .channel("dashboard-bookings")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings" }, () => {
-        load();
+        void load();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, navigate]);
 
   const getInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -218,6 +236,7 @@ const Dashboard = () => {
     setRatingErrors((prev) => ({ ...prev, [request.id]: "" }));
 
     const ratingComment = ratingComments[request.id]?.trim() || null;
+
     const { error } = await supabase.from("renter_ratings").insert({
       booking_id: request.id,
       renter_id: request.renter_id,
@@ -328,9 +347,20 @@ const Dashboard = () => {
                       <p className="text-sm text-gray-500">{booking.cars?.location}</p>
                       <p className="text-sm text-gray-600 mt-1">{format(new Date(booking.start_date), "MMM d")} to {format(new Date(booking.end_date), "MMM d, yyyy")}</p>
                       <p className="text-sm font-semibold mt-1">KSh {booking.total_price.toLocaleString()}</p>
+                      {booking.payment_method ? (
+                        <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">Paid via {booking.payment_method}</p>
+                      ) : null}
                     </div>
                     <div className="flex flex-col gap-2 items-start md:items-end">
-                      <Badge className={statusColor[booking.status] || ""}>{booking.status}</Badge>
+                      <div className="flex flex-wrap gap-2 md:justify-end">
+                        <Badge className={statusColor[booking.status] || ""}>{booking.status}</Badge>
+                        <Badge className={paymentStatusColor(booking.payment_status)}>{paymentStatusLabel(booking.payment_status)}</Badge>
+                      </div>
+                      {booking.status === "confirmed" && isPaymentPending(booking.payment_status) && (
+                        <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => navigate(`/payment/${booking.id}`)}>
+                          Pay Now <ArrowRight className="ml-1 h-4 w-4" />
+                        </Button>
+                      )}
                       {booking.status === "pending" && (
                         <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => cancelBooking(booking.id)}>Cancel</Button>
                       )}

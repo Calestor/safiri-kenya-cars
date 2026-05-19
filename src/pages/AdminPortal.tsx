@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
   Calendar,
   Car,
+  DollarSign,
   ExternalLink,
   Loader2,
   LogOut,
@@ -54,6 +55,7 @@ type BookingRow = Database["public"]["Tables"]["bookings"]["Row"] & {
   } | null;
   renterProfile?: ProfileRow | null;
 };
+type PayoutRow = Database["public"]["Tables"]["payouts"]["Row"];
 
 type LicensePreview = {
   name: string;
@@ -73,6 +75,17 @@ const bookingStatusBadgeClass: Record<BookingStatus | "cancelled", string> = {
   cancelled: "border-transparent bg-red-100 text-red-700",
   completed: "border-transparent bg-blue-100 text-blue-700",
 };
+
+const paymentStatusBadgeClass = (status?: string | null) => {
+  if (!status || status === "unpaid") return "border-transparent bg-orange-100 text-orange-700";
+  if (status === "paid") return "border-transparent bg-green-100 text-green-700";
+  return "border-transparent bg-red-100 text-red-700";
+};
+
+const payoutStatusBadgeClass = (status?: string | null) =>
+  status === "paid"
+    ? "border-transparent bg-green-100 text-green-700"
+    : "border-transparent bg-orange-100 text-orange-700";
 
 const availabilityBadgeClass = (available: boolean) =>
   available
@@ -95,6 +108,11 @@ const formatDate = (value?: string | null) => {
     month: "short",
     day: "numeric",
   }).format(date);
+};
+
+const formatDateRange = (start?: string | null, end?: string | null) => {
+  if (!start || !end) return "—";
+  return `${formatDate(start)} - ${formatDate(end)}`;
 };
 
 const formatCurrency = (value: number) =>
@@ -123,6 +141,8 @@ const AdminPortal = () => {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [cars, setCars] = useState<CarRow[]>([]);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [payoutsAvailable, setPayoutsAvailable] = useState(true);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [licensePreview, setLicensePreview] = useState<LicensePreview | null>(null);
 
@@ -130,10 +150,11 @@ const AdminPortal = () => {
     setLoading(true);
 
     try {
-      const [profilesRes, carsRes, bookingsRes] = await Promise.all([
+      const [profilesRes, carsRes, bookingsRes, payoutsRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("cars").select("*, profiles!owner_id(full_name, phone)").order("created_at", { ascending: false }),
         supabase.from("bookings").select("*, cars(title, brand)").order("created_at", { ascending: false }),
+        supabase.from("payouts").select("*").order("created_at", { ascending: false }),
       ]);
 
       if (profilesRes.error) throw profilesRes.error;
@@ -153,6 +174,14 @@ const AdminPortal = () => {
           renterProfile: profileMap.get(booking.renter_id) ?? null,
         })),
       );
+
+      if (payoutsRes.error) {
+        setPayoutsAvailable(false);
+        setPayouts([]);
+      } else {
+        setPayoutsAvailable(true);
+        setPayouts((payoutsRes.data ?? []) as PayoutRow[]);
+      }
     } catch (error: any) {
       toast({
         title: "Failed to load admin data",
@@ -227,10 +256,53 @@ const AdminPortal = () => {
     }
   };
 
+  const markPayoutAsPaid = async (payoutId: string) => {
+    setPendingAction(`payout-${payoutId}`);
+
+    try {
+      const { error } = await supabase
+        .from("payouts")
+        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .eq("id", payoutId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Payout marked as paid",
+        description: "Owner payout status updated successfully.",
+      });
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Unable to update payout",
+        description: error?.message ?? "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const carMap = useMemo(() => new Map(cars.map((car) => [car.id, car])), [cars]);
+  const profileMap = useMemo(() => new Map(profiles.map((item) => [item.id, item])), [profiles]);
+  const bookingMap = useMemo(() => new Map(bookings.map((booking) => [booking.id, booking])), [bookings]);
+
+  const payoutRows = useMemo(() => payouts.map((payout) => {
+    const booking = payout.booking_id ? bookingMap.get(payout.booking_id) ?? null : null;
+    const owner = payout.owner_id ? profileMap.get(payout.owner_id) ?? null : null;
+    const car = booking?.car_id ? carMap.get(booking.car_id) ?? null : null;
+
+    return { payout, booking, owner, car };
+  }), [bookingMap, carMap, payouts, profileMap]);
+
   const stats = useMemo(() => {
     const activeBookings = bookings.filter((booking) => ["confirmed", "pending"].includes(booking.status)).length;
     const pendingBookings = bookings.filter((booking) => booking.status === "pending").length;
     const disabledAccounts = profiles.filter((item) => item.is_active === false).length;
+    const totalCommission = bookings
+      .filter((booking) => booking.payment_status === "paid")
+      .reduce((sum, booking) => sum + Number(booking.commission_amount || 0), 0);
+    const pendingPayouts = payouts.filter((payout) => payout.status !== "paid").length;
 
     return [
       {
@@ -258,6 +330,18 @@ const AdminPortal = () => {
         subtitle: "Awaiting admin attention",
       },
       {
+        title: "Total Commission Earned",
+        value: formatCurrency(totalCommission),
+        icon: DollarSign,
+        subtitle: "From successfully paid bookings",
+      },
+      {
+        title: "Pending Payouts",
+        value: pendingPayouts,
+        icon: Shield,
+        subtitle: payoutsAvailable ? "Awaiting owner settlement" : "Run payment migration first",
+      },
+      {
         title: "Active Bookings",
         value: activeBookings,
         icon: Shield,
@@ -270,7 +354,7 @@ const AdminPortal = () => {
         subtitle: "Currently blocked users",
       },
     ];
-  }, [bookings, cars, profiles]);
+  }, [bookings, cars, payouts, payoutsAvailable, profiles]);
 
   const adminName = profile?.full_name || "Super Admin";
 
@@ -325,15 +409,16 @@ const AdminPortal = () => {
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-slate-200 p-1 md:grid-cols-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-slate-200 p-1 md:grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="cars">Cars</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="payouts">Payouts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => {
                 const Icon = stat.icon;
 
@@ -555,12 +640,13 @@ const AdminPortal = () => {
                       <TableHead>End Date</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Payment</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {bookings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-slate-500">
+                        <TableCell colSpan={8} className="py-8 text-center text-slate-500">
                           No bookings found.
                         </TableCell>
                       </TableRow>
@@ -590,12 +676,96 @@ const AdminPortal = () => {
                             <TableCell>
                               <Badge className={cn("capitalize", statusClass)}>{booking.status}</Badge>
                             </TableCell>
+                            <TableCell>
+                              <div className="space-y-2">
+                                <Badge className={paymentStatusBadgeClass(booking.payment_status)}>
+                                  {booking.payment_status || "unpaid"}
+                                </Badge>
+                                {booking.payment_method ? (
+                                  <div className="text-xs uppercase tracking-wide text-slate-500">{booking.payment_method}</div>
+                                ) : null}
+                              </div>
+                            </TableCell>
                           </TableRow>
                         );
                       })
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payouts">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Owner Payouts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!payoutsAvailable ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    Run the payment migration before using payout management. Once the <code>payouts</code> table exists, records will appear here automatically.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>Car</TableHead>
+                        <TableHead>Booking Dates</TableHead>
+                        <TableHead>Total Paid</TableHead>
+                        <TableHead>Commission</TableHead>
+                        <TableHead>Owner Payout</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payoutRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="py-8 text-center text-slate-500">
+                            No payouts recorded yet.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        payoutRows.map(({ payout, booking, owner, car }) => {
+                          const actionKey = `payout-${payout.id}`;
+                          const isUpdating = pendingAction === actionKey;
+
+                          return (
+                            <TableRow key={payout.id}>
+                              <TableCell>
+                                <div className="font-medium text-slate-900">{owner?.full_name || "Unknown owner"}</div>
+                                <div className="text-xs text-slate-500">{owner?.phone || "Phone unavailable"}</div>
+                              </TableCell>
+                              <TableCell>{car?.title || booking?.cars?.title || "Unknown car"}</TableCell>
+                              <TableCell>{formatDateRange(booking?.start_date, booking?.end_date)}</TableCell>
+                              <TableCell>{formatCurrency(Number(payout.total_amount || 0))}</TableCell>
+                              <TableCell>{formatCurrency(Number(payout.commission_amount || 0))}</TableCell>
+                              <TableCell>{formatCurrency(Number(payout.payout_amount || 0))}</TableCell>
+                              <TableCell>
+                                <Badge className={payoutStatusBadgeClass(payout.status)}>{payout.status || "pending"}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-end">
+                                  <Button
+                                    size="sm"
+                                    disabled={payout.status === "paid" || isUpdating}
+                                    onClick={() => markPayoutAsPaid(payout.id)}
+                                    className="bg-green-600 text-white hover:bg-green-700"
+                                  >
+                                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                                    {payout.status === "paid" ? "Paid" : "Mark as Paid"}
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,0 +1,7 @@
+project_id = "ggovsxhmuhcgizagewtu"
+
+[functions.mpesa-callback]
+verify_jwt = false
+
+[functions.pesapal-ipn]
+verify_jwt = false

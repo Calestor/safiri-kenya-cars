@@ -1,4 +1,4 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+﻿export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface Database {
   public: {
@@ -117,6 +117,13 @@ export interface Database {
           end_date: string;
           total_price: number;
           status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          payment_status: string | null;
+          payment_method: string | null;
+          commission_rate: number | null;
+          commission_amount: number | null;
+          owner_payout_amount: number | null;
+          mpesa_checkout_request_id: string | null;
+          pesapal_order_tracking_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -127,9 +134,79 @@ export interface Database {
           end_date: string;
           total_price: number;
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          payment_status?: string | null;
+          payment_method?: string | null;
+          commission_rate?: number | null;
+          commission_amount?: number | null;
+          owner_payout_amount?: number | null;
+          mpesa_checkout_request_id?: string | null;
+          pesapal_order_tracking_id?: string | null;
+          created_at?: string;
         };
         Update: {
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          payment_status?: string | null;
+          payment_method?: string | null;
+          commission_rate?: number | null;
+          commission_amount?: number | null;
+          owner_payout_amount?: number | null;
+          mpesa_checkout_request_id?: string | null;
+          pesapal_order_tracking_id?: string | null;
+        };
+      };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          key: string;
+          value: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          key?: string;
+          value?: string;
+          updated_at?: string | null;
+        };
+      };
+      payouts: {
+        Row: {
+          id: string;
+          booking_id: string | null;
+          owner_id: string | null;
+          total_amount: number;
+          commission_amount: number;
+          payout_amount: number;
+          status: string | null;
+          payment_method: string | null;
+          created_at: string | null;
+          paid_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          booking_id?: string | null;
+          owner_id?: string | null;
+          total_amount: number;
+          commission_amount: number;
+          payout_amount: number;
+          status?: string | null;
+          payment_method?: string | null;
+          created_at?: string | null;
+          paid_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string | null;
+          owner_id?: string | null;
+          total_amount?: number;
+          commission_amount?: number;
+          payout_amount?: number;
+          status?: string | null;
+          payment_method?: string | null;
+          created_at?: string | null;
+          paid_at?: string | null;
         };
       };
       reviews: {

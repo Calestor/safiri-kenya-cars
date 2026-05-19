@@ -15,6 +15,9 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import AdminRoute from "./components/AdminRoute";
 import AdminPortal from "./pages/AdminPortal";
+import PaymentPage from "./pages/PaymentPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +37,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/payment/:bookingId" element={<PaymentPage />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><AdminPortal /></AdminRoute>} />
