@@ -35,42 +35,52 @@ const CarDetails = () => {
       return;
     }
 
-    setLoading(true);
-    supabase
-      .from("cars")
-      .select("*, car_images(url, position)")
-      .eq("id", carId)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          // Fallback: fetch without car_images join (table may not exist yet)
-          return supabase.from("cars").select("*").eq("id", carId).single();
-        }
-        return { data, error: null };
-      })
-      .then(({ data }) => {
-        setCar(data ?? null);
-        setLoading(false);
-      });
+  useEffect(() => {
+    if (!carId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchCar = async () => {
+      setLoading(true);
+      // Try with car_images join first; fall back if table doesn't exist
+      let { data, error } = await supabase
+        .from("cars")
+        .select("*, car_images(url, position)")
+        .eq("id", carId)
+        .single();
+
+      if (error) {
+        const fallback = await supabase.from("cars").select("*").eq("id", carId).single();
+        data = fallback.data;
+      }
+
+      setCar(data ?? null);
+      setLoading(false);
+    };
+
+    fetchCar();
   }, [carId]);
 
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [carId]);
 
+  const getImages = (car: any): string[] => {
+    if (car.car_images && car.car_images.length > 0) {
+      return car.car_images
+        .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+        .map((img: { url: string }) => img.url);
+    }
+    if (car.images && car.images.length > 0) return car.images;
+    return [car.image || FALLBACK_IMAGE];
+  };
+
   const mappedCar = car
     ? {
         ...car,
         image: car.image || car.images?.[0] || FALLBACK_IMAGE,
-        images: (() => {
-          // Use car_images table if available, fallback to images array, then single image
-          const dbImages = car.car_images
-            ?.sort((a: { position: number }, b: { position: number }) => a.position - b.position)
-            .map((img: { url: string }) => img.url) ?? [];
-          if (dbImages.length > 0) return dbImages;
-          if (car.images?.length) return car.images;
-          return [car.image || FALLBACK_IMAGE];
-        })(),
+        images: getImages(car),
         fuelType: car.fuel_type,
         ownerName: car.owner_name || "Safiri Host",
         reviewCount: car.review_count ?? 0,
