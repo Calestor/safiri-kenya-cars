@@ -120,14 +120,14 @@ const ListYourCar = () => {
       const file = imageFiles[i];
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${user.id}/${carData.id}/${i}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("car-images").upload(path, file, { upsert: true });
+      const { error: uploadErr } = await supabase.storage.from("car-image").upload(path, file, { upsert: true });
       if (uploadErr) {
         console.error(`Upload failed for image ${i}:`, uploadErr.message);
         setError(`Image upload failed: ${uploadErr.message}`);
         setSubmitting(false);
         return;
       }
-      const { data: { publicUrl } } = supabase.storage.from("car-images").getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from("car-image").getPublicUrl(path);
       uploadedUrls.push(publicUrl);
     }
 
