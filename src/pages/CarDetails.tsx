@@ -41,6 +41,13 @@ const CarDetails = () => {
       .select("*, car_images(url, position)")
       .eq("id", carId)
       .single()
+      .then(({ data, error }) => {
+        if (error || !data) {
+          // Fallback: fetch without car_images join (table may not exist yet)
+          return supabase.from("cars").select("*").eq("id", carId).single();
+        }
+        return { data, error: null };
+      })
       .then(({ data }) => {
         setCar(data ?? null);
         setLoading(false);
@@ -66,12 +73,15 @@ const CarDetails = () => {
         })(),
         fuelType: car.fuel_type,
         ownerName: car.owner_name || "Safiri Host",
-        reviewCount: car.review_count,
+        reviewCount: car.review_count ?? 0,
         fuelEfficiency: car.fuel_efficiency || "—",
-        ownerRating: car.owner_rating,
+        ownerRating: car.owner_rating ?? 5,
         joinDate: car.created_at,
         responseTime: "Usually within a few hours",
         description: car.description || "No description available.",
+        features: car.features || [],
+        mileage: car.mileage ?? 0,
+        rating: car.rating ?? 0,
       }
     : null;
 
