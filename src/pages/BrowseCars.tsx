@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarCard from "@/components/CarCard";
-import { mockCars } from "@/lib/mockCars";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,14 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop";
 
 const BrowseCars = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
+  const [allCars, setAllCars] = useState<any[]>([]);
+  const [carsLoading, setCarsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(searchParams.get("location") || "all");
   const [selectedCarType, setSelectedCarType] = useState("all");
@@ -29,18 +32,35 @@ const BrowseCars = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique values for filters
-  const locations = Array.from(new Set(mockCars.map((car) => car.location)));
+  useEffect(() => {
+    const fetchCars = async () => {
+      const { data, error } = await supabase
+        .from("cars")
+        .select("*")
+        .eq("is_available", true)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setAllCars(data);
+      }
+      setCarsLoading(false);
+    };
+
+    fetchCars();
+  }, []);
+
+  const locations = Array.from(new Set(allCars.map((car) => car.location)));
   const carTypes = ["SUV", "Sedan", "Hatchback", "Minivan"];
   const transmissions = ["Automatic", "Manual"];
 
-  // Filter and sort logic
   const filteredCars = useMemo(() => {
-    let filtered = mockCars.filter((car) => {
+    const filtered = allCars.filter((car) => {
+      const search = searchQuery.toLowerCase();
       const matchesSearch =
-        car.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        car.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        car.model.toLowerCase().includes(searchQuery.toLowerCase());
+        car.title.toLowerCase().includes(search) ||
+        car.brand.toLowerCase().includes(search) ||
+        car.model.toLowerCase().includes(search) ||
+        car.location.toLowerCase().includes(search);
 
       const matchesLocation = selectedLocation === "all" || car.location === selectedLocation;
       const matchesCarType = selectedCarType === "all" || car.type === selectedCarType;
@@ -57,19 +77,20 @@ const BrowseCars = () => {
       );
     });
 
-    // Sort
     switch (sortBy) {
       case "price-low":
-        return filtered.sort((a, b) => a.price - b.price);
+        return [...filtered].sort((a, b) => a.price - b.price);
       case "price-high":
-        return filtered.sort((a, b) => b.price - a.price);
+        return [...filtered].sort((a, b) => b.price - a.price);
       case "rating":
-        return filtered.sort((a, b) => b.rating - a.rating);
+        return [...filtered].sort((a, b) => b.rating - a.rating);
       case "newest":
       default:
-        return filtered;
+        return [...filtered].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
     }
-  }, [searchQuery, selectedLocation, selectedCarType, selectedTransmission, priceRange, sortBy]);
+  }, [allCars, searchQuery, selectedLocation, selectedCarType, selectedTransmission, priceRange, sortBy]);
 
   const isFilterActive =
     searchQuery ||
@@ -94,23 +115,25 @@ const BrowseCars = () => {
       <Navbar />
 
       <div className="flex-1 bg-gray-50">
-        {/* Header */}
         <div className="bg-white border-b py-8">
           <div className="container mx-auto px-4">
             <h1 className="text-4xl font-bold mb-2">Browse Cars</h1>
             <p className="text-gray-600">
-              Found <span className="font-bold text-kenya-red">{filteredCars.length}</span> cars
-              available
+              {carsLoading ? (
+                "Loading available cars..."
+              ) : (
+                <>
+                  Found <span className="font-bold text-kenya-red">{filteredCars.length}</span> cars available
+                </>
+              )}
             </p>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Filters Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
-                {/* Mobile Filter Toggle */}
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
                   className="lg:hidden w-full mb-4 bg-kenya-red hover:bg-kenya-red/90"
@@ -119,7 +142,6 @@ const BrowseCars = () => {
                   {showFilters ? "Hide" : "Show"} Filters
                 </Button>
 
-                {/* Filters */}
                 <Card className={`${showFilters ? "block" : "hidden"} lg:block`}>
                   <CardHeader>
                     <div className="flex justify-between items-center">
@@ -136,7 +158,6 @@ const BrowseCars = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Search */}
                     <div>
                       <label className="block text-sm font-semibold mb-2">Search</label>
                       <div className="relative">
@@ -150,7 +171,6 @@ const BrowseCars = () => {
                       </div>
                     </div>
 
-                    {/* Location */}
                     <div>
                       <label className="block text-sm font-semibold mb-2">Location</label>
                       <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -168,7 +188,6 @@ const BrowseCars = () => {
                       </Select>
                     </div>
 
-                    {/* Car Type */}
                     <div>
                       <label className="block text-sm font-semibold mb-2">Car Type</label>
                       <Select value={selectedCarType} onValueChange={setSelectedCarType}>
@@ -186,7 +205,6 @@ const BrowseCars = () => {
                       </Select>
                     </div>
 
-                    {/* Transmission */}
                     <div>
                       <label className="block text-sm font-semibold mb-2">Transmission</label>
                       <Select
@@ -207,7 +225,6 @@ const BrowseCars = () => {
                       </Select>
                     </div>
 
-                    {/* Price Range */}
                     <div>
                       <label className="block text-sm font-semibold mb-4">
                         Price Range
@@ -216,8 +233,8 @@ const BrowseCars = () => {
                         value={priceRange}
                         onValueChange={setPriceRange}
                         min={1000}
-                       max={200000}
-                       step={500}
+                        max={200000}
+                        step={500}
                         className="mb-4"
                       />
                       <div className="flex justify-between text-sm text-gray-600">
@@ -226,7 +243,6 @@ const BrowseCars = () => {
                       </div>
                     </div>
 
-                    {/* Sort */}
                     <div>
                       <label className="block text-sm font-semibold mb-2">Sort By</label>
                       <Select value={sortBy} onValueChange={setSortBy}>
@@ -246,9 +262,12 @@ const BrowseCars = () => {
               </div>
             </div>
 
-            {/* Cars Grid */}
             <div className="lg:col-span-3">
-              {filteredCars.length > 0 ? (
+              {carsLoading ? (
+                <div className="flex min-h-[320px] items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-kenya-red" />
+                </div>
+              ) : filteredCars.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredCars.map((car) => (
                     <div
@@ -256,7 +275,15 @@ const BrowseCars = () => {
                       onClick={() => navigate(`/cars/${car.id}`)}
                       className="cursor-pointer"
                     >
-                      <CarCard {...car} featured={false} />
+                      <CarCard
+                        {...car}
+                        image={car.image || FALLBACK_IMAGE}
+                        reviewCount={car.review_count}
+                        fuelType={car.fuel_type}
+                        ownerName={car.owner_name}
+                        fuelEfficiency={car.fuel_efficiency}
+                        featured={false}
+                      />
                     </div>
                   ))}
                 </div>

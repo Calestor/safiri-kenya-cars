@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Car } from "@/lib/mockCars";
+﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -14,18 +13,33 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface BookingCar {
+  id: string;
+  title: string;
+  image: string;
+  price: number;
+  location: string;
+  year: number;
+  ownerName: string;
+}
 
 interface BookingWidgetProps {
-  car: Car;
+  car: BookingCar;
 }
 
 const BookingWidget = ({ car }: BookingWidgetProps) => {
+  const { user } = useAuth();
   const [pickupDate, setPickupDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [showConfirm, setShowConfirm] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [bookingError, setBookingError] = useState("");
 
   const calculateDays = () => {
     if (pickupDate && returnDate) {
@@ -43,10 +57,39 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
 
   const handleBooking = () => {
     if (!pickupDate || !returnDate) return;
+    setBookingError("");
     setShowConfirm(true);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!pickupDate || !returnDate) {
+      return;
+    }
+
+    setConfirming(true);
+    setBookingError("");
+
+    const { error } = await supabase.from("bookings").insert({
+      car_id: car.id,
+      renter_id: user.id,
+      start_date: format(pickupDate, "yyyy-MM-dd"),
+      end_date: format(returnDate, "yyyy-MM-dd"),
+      total_price: total,
+      status: "pending",
+    });
+
+    setConfirming(false);
+
+    if (error) {
+      setBookingError(error.message);
+      return;
+    }
+
     setShowConfirm(false);
     setBooked(true);
   };
@@ -54,7 +97,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
   return (
     <>
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 space-y-6">
-        {/* Price Header */}
         <div className="border-b pb-4">
           <div className="text-3xl font-bold text-kenya-red mb-1">
             KSh {car.price.toLocaleString()}
@@ -62,7 +104,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
           <p className="text-gray-600">per day</p>
         </div>
 
-        {/* Success State */}
         {booked ? (
           <div className="text-center py-6 space-y-3">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
@@ -79,14 +120,17 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => { setBooked(false); setPickupDate(undefined); setReturnDate(undefined); }}
+              onClick={() => {
+                setBooked(false);
+                setPickupDate(undefined);
+                setReturnDate(undefined);
+              }}
             >
               Make Another Booking
             </Button>
           </div>
         ) : (
           <>
-            {/* Dates Selection */}
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -137,7 +181,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
               </div>
             </div>
 
-            {/* Duration */}
             {days > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-600">
@@ -147,7 +190,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
               </div>
             )}
 
-            {/* Price Breakdown */}
             {days > 0 && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -169,7 +211,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
               </div>
             )}
 
-            {/* Warning */}
             {(!pickupDate || !returnDate) && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex gap-2">
                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -177,16 +218,25 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
               </div>
             )}
 
-            {/* Booking Button */}
-            <Button
-              onClick={handleBooking}
-              disabled={!pickupDate || !returnDate}
-              className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white py-6 text-lg font-semibold"
-            >
-              Book Now
-            </Button>
+            {user ? (
+              <Button
+                onClick={handleBooking}
+                disabled={!pickupDate || !returnDate}
+                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white py-6 text-lg font-semibold"
+              >
+                Book Now
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  window.location.href = "/login";
+                }}
+                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white py-6 text-lg font-semibold"
+              >
+                Login to Book
+              </Button>
+            )}
 
-            {/* Additional Info */}
             <div className="space-y-2 text-sm text-gray-600">
               <p>✓ Free cancellation up to 24 hours before pickup</p>
               <p>✓ Mileage: Unlimited</p>
@@ -199,7 +249,6 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
         )}
       </div>
 
-      {/* Confirmation Dialog */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -246,6 +295,8 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
               </div>
             </div>
 
+            {bookingError && <p className="text-sm text-red-500">{bookingError}</p>}
+
             <p className="text-xs text-gray-500 text-center">
               By confirming, you agree to our Terms of Service and cancellation policy.
             </p>
@@ -257,9 +308,17 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
             </Button>
             <Button
               onClick={handleConfirm}
+              disabled={confirming}
               className="bg-kenya-red hover:bg-kenya-red/90 text-white flex-1"
             >
-              Confirm Booking
+              {confirming ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Confirming...
+                </>
+              ) : (
+                "Confirm Booking"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -269,5 +328,3 @@ const BookingWidget = ({ car }: BookingWidgetProps) => {
 };
 
 export default BookingWidget;
-
-

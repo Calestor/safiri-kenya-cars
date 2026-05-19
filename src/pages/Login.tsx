@@ -1,19 +1,33 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Car } from "lucide-react";
+import { Car, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrate real auth
+    setSubmitting(true);
+    setError("");
+
+    const { error: signInError } = await signIn(email, password);
+
+    setSubmitting(false);
+    if (signInError) {
+      setError(signInError);
+      return;
+    }
+
     navigate("/");
   };
 
@@ -61,11 +75,20 @@ const Login = () => {
                   required
                 />
               </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
               <Button
                 type="submit"
+                disabled={submitting}
                 className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white py-5 font-semibold"
               >
-                Log In
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging In...
+                  </>
+                ) : (
+                  "Log In"
+                )}
               </Button>
             </form>
 

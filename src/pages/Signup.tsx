@@ -1,28 +1,47 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Car } from "lucide-react";
+﻿import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Car, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Signup = () => {
-  const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
       setError("Passwords do not match.");
+      setMessage("");
       return;
     }
+
+    setSubmitting(true);
     setError("");
-    // TODO: integrate real auth
-    navigate("/");
+    setMessage("");
+
+    const { error: signUpError } = await signUp(email, password, name);
+
+    setSubmitting(false);
+    if (signUpError) {
+      setError(signUpError);
+      return;
+    }
+
+    setName("");
+    setEmail("");
+    setPassword("");
+    setConfirm("");
+    setMessage("Check your email to confirm your account");
   };
 
   return (
@@ -87,11 +106,20 @@ const Signup = () => {
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
+              {message && <p className="text-sm text-green-600">{message}</p>}
               <Button
                 type="submit"
+                disabled={submitting}
                 className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white py-5 font-semibold"
               >
-                Create Account
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </form>
 
