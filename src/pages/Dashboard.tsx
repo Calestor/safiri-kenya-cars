@@ -41,7 +41,6 @@ const Dashboard = () => {
       if (bookingsRes.data) setBookings(bookingsRes.data);
       if (carsRes.data) {
         setMyCars(carsRes.data);
-        // Fetch booking requests for all my cars
         const carIds = carsRes.data.map((c: any) => c.id);
         if (carIds.length > 0) {
           const { data: reqData } = await supabase
@@ -55,6 +54,16 @@ const Dashboard = () => {
       setDataLoading(false);
     };
     load();
+
+    // Real-time: refresh bookings when any booking changes
+    const channel = supabase
+      .channel("dashboard-bookings")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings" }, () => {
+        load();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const toggleAvailability = async (carId: string, current: boolean) => {
