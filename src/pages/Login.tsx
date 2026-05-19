@@ -67,7 +67,7 @@ const Login = () => {
                     onClick={async () => {
                       if (!email) { setError("Enter your email above first."); return; }
                       await import('@/lib/supabase').then(({ supabase }) =>
-                        supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login' })
+                        supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })
                       );
                       setError("");
                       alert("Password reset email sent! Check your inbox.");
