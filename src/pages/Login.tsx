@@ -62,9 +62,20 @@ const Login = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="text-sm text-kenya-red hover:underline">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!email) { setError("Enter your email above first."); return; }
+                      await import('@/lib/supabase').then(({ supabase }) =>
+                        supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login' })
+                      );
+                      setError("");
+                      alert("Password reset email sent! Check your inbox.");
+                    }}
+                    className="text-sm text-kenya-red hover:underline"
+                  >
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
                 <Input
                   id="password"
