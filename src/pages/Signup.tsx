@@ -74,12 +74,14 @@ const Signup = () => {
         : null;
       const driverLicenseUrl = await uploadFile("driver-licenses", userId, "license", driverLicense);
 
-      const { error: profileError } = await supabase.from("profiles").update({
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: userId,
         full_name: fullName,
         phone,
         avatar_url: avatarUrl,
         driver_license_url: driverLicenseUrl,
-      }).eq("id", userId);
+        role: 'renter',
+      }, { onConflict: 'id' });
 
       if (profileError) throw profileError;
 
