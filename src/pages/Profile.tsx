@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Star, Upload, FileText, User, Phone, CreditCard, Mail, ShieldCheck } from "lucide-react";
+import { Camera, Star, Upload, User, Phone, CreditCard, Mail, ShieldCheck } from "lucide-react";
 
 interface RatingInfo {
   avg: number;
@@ -258,11 +258,6 @@ const Profile = () => {
           )}
 
           <div className="flex items-center gap-3 flex-wrap">
-            {licenseUrl && !licensePreview && (
-              <a href={licenseUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-kenya-red hover:underline text-sm">
-                <FileText className="h-4 w-4" /> Open full document
-              </a>
-            )}
             <Button
               variant="outline"
               size="sm"
