@@ -25,7 +25,7 @@ const BrowseCars = () => {
   const [selectedLocation, setSelectedLocation] = useState(searchParams.get("location") || "all");
   const [selectedCarType, setSelectedCarType] = useState("all");
   const [selectedTransmission, setSelectedTransmission] = useState("all");
-  const [priceRange, setPriceRange] = useState([2000, 6000]);
+  const [priceRange, setPriceRange] = useState([1000, 200000]);
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -76,8 +76,8 @@ const BrowseCars = () => {
     selectedLocation !== "all" ||
     selectedCarType !== "all" ||
     selectedTransmission !== "all" ||
-    priceRange[0] !== 2000 ||
-    priceRange[1] !== 6000 ||
+    priceRange[0] !== 1000 ||
+    priceRange[1] !== 200000 ||
     sortBy !== "newest";
 
   const clearFilters = () => {
@@ -85,7 +85,7 @@ const BrowseCars = () => {
     setSelectedLocation("all");
     setSelectedCarType("all");
     setSelectedTransmission("all");
-    setPriceRange([2000, 6000]);
+    setPriceRange([1000, 200000]);
     setSortBy("newest");
   };
 
@@ -216,8 +216,8 @@ const BrowseCars = () => {
                         value={priceRange}
                         onValueChange={setPriceRange}
                         min={1000}
-                        max={8000}
-                        step={100}
+                       max={200000}
+                       step={500}
                         className="mb-4"
                       />
                       <div className="flex justify-between text-sm text-gray-600">
