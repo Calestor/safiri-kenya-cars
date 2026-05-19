@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head><title>Car Images Setup SQL</title>
+<style>
+  body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; font-size: 13px; }
+  button { background: #e63946; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; font-size: 14px; }
+  button:hover { background: #c1121f; }
+  .step { margin-bottom: 40px; }
+  h2 { color: #333; }
+  .note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+</style>
+</head>
+<body>
+<h1>🗄️ Car Images Setup</h1>
+<p>Run this SQL in <strong>Supabase → SQL Editor → New query</strong></p>
+
+<div class="step">
+  <h2>Step 1 — Create car_images table + storage bucket</h2>
+  <div class="note">⚠️ Run this entire block at once</div>
+  <pre id="sql1">-- car_images table
+CREATE TABLE IF NOT EXISTS public.car_images (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  car_id UUID NOT NULL REFERENCES public.cars(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  position INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.car_images ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view car images" ON public.car_images
+  FOR SELECT USING (true);
+
+CREATE POLICY "Car owner can manage images" ON public.car_images
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.cars
+      WHERE cars.id = car_images.car_id
+      AND cars.owner_id = auth.uid()
+    )
+  );
+
+-- Storage bucket
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('car-images', 'car-images', true)
+ON CONFLICT DO NOTHING;
+
+-- Storage policies
+CREATE POLICY "Public can view car images" ON storage.objects
+  FOR SELECT USING (bucket_id = 'car-images');
+
+CREATE POLICY "Auth users can upload car images" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'car-images' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Users can delete own uploads" ON storage.objects
+  FOR DELETE USING (bucket_id = 'car-images' AND auth.uid() = owner);</pre>
+  <button onclick="copy('sql1')">📋 Copy SQL</button>
+</div>
+
+<script>
+function copy(id) {
+  navigator.clipboard.writeText(document.getElementById(id).innerText);
+  event.target.textContent = '✅ Copied!';
+  setTimeout(() => event.target.textContent = '📋 Copy SQL', 2000);
+}
+</script>
+</body>
+</html>

@@ -38,7 +38,7 @@ const CarDetails = () => {
     setLoading(true);
     supabase
       .from("cars")
-      .select("*")
+      .select("*, car_images(url, position)")
       .eq("id", carId)
       .single()
       .then(({ data }) => {
@@ -55,7 +55,15 @@ const CarDetails = () => {
     ? {
         ...car,
         image: car.image || car.images?.[0] || FALLBACK_IMAGE,
-        images: car.images?.length ? car.images : [car.image || FALLBACK_IMAGE],
+        images: (() => {
+          // Use car_images table if available, fallback to images array, then single image
+          const dbImages = car.car_images
+            ?.sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+            .map((img: { url: string }) => img.url) ?? [];
+          if (dbImages.length > 0) return dbImages;
+          if (car.images?.length) return car.images;
+          return [car.image || FALLBACK_IMAGE];
+        })(),
         fuelType: car.fuel_type,
         ownerName: car.owner_name || "Safiri Host",
         reviewCount: car.review_count,

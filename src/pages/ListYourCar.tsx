@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -36,17 +36,19 @@ const emptyForm = {
   mileage: "",
   fuel_efficiency: "",
   description: "",
-  image: "",
 };
 
 const ListYourCar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const setField = (field: keyof typeof emptyForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -56,19 +58,34 @@ const ListYourCar = () => {
       prev.includes(feature) ? prev.filter((item) => item !== feature) : [...prev, feature]
     );
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 10);
+    setImageFiles(files);
+    setImagePreviews(files.map((f) => URL.createObjectURL(f)));
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     setForm(emptyForm);
     setSelectedFeatures([]);
+    setImageFiles([]);
+    setImagePreviews([]);
     setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (imageFiles.length === 0) { setError("Please add at least one photo of your car."); return; }
     setSubmitting(true);
     setError(null);
 
-    const { error: err } = await supabase.from("cars").insert({
+    // 1. Insert car record first to get its ID
+    const { data: carData, error: carErr } = await supabase.from("cars").insert({
       owner_id: user.id,
       title: form.title,
       brand: form.brand,
@@ -83,19 +100,44 @@ const ListYourCar = () => {
       mileage: Number(form.mileage) || 0,
       fuel_efficiency: form.fuel_efficiency || null,
       description: form.description || null,
-      image: form.image || null,
-      images: form.image ? [form.image] : [],
       features: selectedFeatures,
       is_available: true,
       owner_name: user.email,
       owner_rating: 5.0,
-    });
+    }).select().single();
 
-    setSubmitting(false);
-    if (err) {
-      setError(err.message);
+    if (carErr || !carData) {
+      setError(carErr?.message ?? "Failed to create listing.");
+      setSubmitting(false);
       return;
     }
+
+    // 2. Upload images to Supabase Storage
+    const uploadedUrls: string[] = [];
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${carData.id}/${i}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("car-images").upload(path, file, { upsert: true });
+      if (!uploadErr) {
+        const { data: { publicUrl } } = supabase.storage.from("car-images").getPublicUrl(path);
+        uploadedUrls.push(publicUrl);
+      }
+    }
+
+    // 3. Update car with image URLs
+    if (uploadedUrls.length > 0) {
+      await supabase.from("cars").update({ image: uploadedUrls[0], images: uploadedUrls }).eq("id", carData.id);
+    }
+
+    // 4. Insert car_images rows
+    if (uploadedUrls.length > 0) {
+      await supabase.from("car_images").insert(
+        uploadedUrls.map((url, position) => ({ car_id: carData.id, url, position }))
+      );
+    }
+
+    setSubmitting(false);
     setSuccess(true);
   };
 
@@ -247,11 +289,47 @@ const ListYourCar = () => {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>Car Image</CardTitle><CardDescription>Paste a direct image URL (Unsplash, Imgur, etc.)</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle>Car Photos</CardTitle>
+                <CardDescription>Upload up to 10 photos. First photo will be the cover image.</CardDescription>
+              </CardHeader>
               <CardContent>
-                <Input placeholder="https://images.unsplash.com/..." value={form.image} onChange={(e) => setField("image", e.target.value)} />
-                {form.image && (
-                  <img src={form.image} alt="preview" className="mt-3 w-full h-48 object-cover rounded-lg" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-kenya-red hover:bg-red-50 transition cursor-pointer"
+                >
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 font-medium">Click to upload photos</p>
+                  <p className="text-gray-400 text-sm mt-1">JPG, PNG, WEBP — up to 10 images</p>
+                </button>
+
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                    {imagePreviews.map((src, i) => (
+                      <div key={i} className="relative group">
+                        <img src={src} alt={`preview ${i + 1}`} className="w-full h-32 object-cover rounded-lg" />
+                        {i === 0 && (
+                          <span className="absolute top-1 left-1 bg-kenya-red text-white text-xs px-2 py-0.5 rounded">Cover</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 bg-black/60 hover:bg-black text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
