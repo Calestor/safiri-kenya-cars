@@ -35,12 +35,6 @@ const CarDetails = () => {
       return;
     }
 
-  useEffect(() => {
-    if (!carId) {
-      setLoading(false);
-      return;
-    }
-
     const fetchCar = async () => {
       setLoading(true);
       // Try with car_images join first; fall back if table doesn't exist
