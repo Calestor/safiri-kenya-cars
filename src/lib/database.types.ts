@@ -10,6 +10,7 @@ export interface Database {
           phone: string | null;
           avatar_url: string | null;
           driver_license_url: string | null;
+          id_number: string | null;
           role: 'renter' | 'owner' | 'admin';
           created_at: string;
         };
@@ -19,6 +20,7 @@ export interface Database {
           phone?: string | null;
           avatar_url?: string | null;
           driver_license_url?: string | null;
+          id_number?: string | null;
           role?: 'renter' | 'owner' | 'admin';
           created_at?: string;
         };
@@ -27,6 +29,7 @@ export interface Database {
           phone?: string | null;
           avatar_url?: string | null;
           driver_license_url?: string | null;
+          id_number?: string | null;
           role?: 'renter' | 'owner' | 'admin';
         };
       };
