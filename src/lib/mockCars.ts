@@ -105,11 +105,11 @@ export const mockCars: Car[] = [
     model: 'Corolla CVT',
     year: 2023,
     type: 'Sedan',
-    image: 'https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=500&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=500&h=400&fit=crop',
     images: [
-      'https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1566023967268-70fec53f79ca?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1507950547674-2b27b501a556?w=800&h=600&fit=crop'
+      'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'
     ],
     price: 2800,
     location: 'Kisumu',
@@ -142,11 +142,11 @@ export const mockCars: Car[] = [
     model: 'X-Trail T31',
     year: 2020,
     type: 'SUV',
-    image: 'https://images.unsplash.com/photo-1464219414199-26ecb847e675?w=500&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=500&h=400&fit=crop',
     images: [
-      'https://images.unsplash.com/photo-1464219414199-26ecb847e675?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop'
+      'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1502161254066-6c74afbf07aa?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&h=600&fit=crop'
     ],
     price: 4200,
     location: 'Nakuru',
@@ -178,11 +178,11 @@ export const mockCars: Car[] = [
     model: 'Civic EX',
     year: 2022,
     type: 'Sedan',
-    image: 'https://images.unsplash.com/photo-1513521399740-48416e8a0ffd?w=500&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1542362567-b07e54358753?w=500&h=400&fit=crop',
     images: [
-      'https://images.unsplash.com/photo-1513521399740-48416e8a0ffd?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1552662712-d4cb814b2d4b?w=800&h=600&fit=crop'
+      'https://images.unsplash.com/photo-1542362567-b07e54358753?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&h=600&fit=crop'
     ],
     price: 3500,
     location: 'Eldoret',
