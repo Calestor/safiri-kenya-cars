@@ -102,6 +102,8 @@ const ListYourCar = () => {
       description: form.description || null,
       features: selectedFeatures,
       is_available: true,
+      rating: 0,
+      review_count: 0,
       owner_name: user.email,
       owner_rating: 5.0,
     }).select().single();

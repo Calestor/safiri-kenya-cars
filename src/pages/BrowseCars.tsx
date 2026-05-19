@@ -42,6 +42,8 @@ const BrowseCars = () => {
 
       if (!error && data) {
         setAllCars(data);
+      } else if (error) {
+        console.error("BrowseCars fetch error:", error.message);
       }
       setCarsLoading(false);
     };
