@@ -9,6 +9,7 @@ export interface Database {
           full_name: string | null;
           phone: string | null;
           avatar_url: string | null;
+          driver_license_url: string | null;
           role: 'renter' | 'owner' | 'admin';
           created_at: string;
         };
@@ -17,6 +18,7 @@ export interface Database {
           full_name?: string | null;
           phone?: string | null;
           avatar_url?: string | null;
+          driver_license_url?: string | null;
           role?: 'renter' | 'owner' | 'admin';
           created_at?: string;
         };
@@ -24,6 +26,7 @@ export interface Database {
           full_name?: string | null;
           phone?: string | null;
           avatar_url?: string | null;
+          driver_license_url?: string | null;
           role?: 'renter' | 'owner' | 'admin';
         };
       };
@@ -139,6 +142,30 @@ export interface Database {
           booking_id?: string | null;
           rating: number;
           comment?: string | null;
+        };
+        Update: {
+          rating?: number;
+          comment?: string | null;
+        };
+      };
+      renter_ratings: {
+        Row: {
+          id: string;
+          booking_id: string;
+          renter_id: string;
+          owner_id: string;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          renter_id: string;
+          owner_id: string;
+          rating: number;
+          comment?: string | null;
+          created_at?: string;
         };
         Update: {
           rating?: number;

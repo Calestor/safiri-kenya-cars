@@ -7,6 +7,7 @@ interface Profile {
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  driver_license_url: string | null;
   role: 'renter' | 'owner' | 'admin';
 }
 
