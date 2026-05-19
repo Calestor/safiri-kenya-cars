@@ -48,7 +48,20 @@ const Dashboard = () => {
             .select("*, cars(title, image, location)")
             .in("car_id", carIds)
             .order("created_at", { ascending: false });
-          if (reqData) setRequests(reqData);
+
+          if (reqData) {
+            // Fetch renter profiles
+            const renterIds = [...new Set(reqData.map((r: any) => r.renter_id))];
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, full_name, phone")
+              .in("id", renterIds);
+
+            const profileMap: Record<string, any> = {};
+            profilesData?.forEach((p: any) => { profileMap[p.id] = p; });
+
+            setRequests(reqData.map((r: any) => ({ ...r, renter: profileMap[r.renter_id] || null })));
+          }
         }
       }
       setDataLoading(false);
@@ -198,6 +211,11 @@ const Dashboard = () => {
                       <p className="text-sm text-gray-500">{req.cars?.location}</p>
                       <p className="text-sm text-gray-600 mt-1">{format(new Date(req.start_date), "MMM d")} → {format(new Date(req.end_date), "MMM d, yyyy")}</p>
                       <p className="text-sm font-semibold mt-1">KSh {req.total_price.toLocaleString()}</p>
+                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded px-2 py-1 w-fit">
+                        <User className="w-3.5 h-3.5" />
+                        <span>{req.renter?.full_name || "Unknown"}</span>
+                        {req.renter?.phone && <span>· {req.renter.phone}</span>}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-2 items-start md:items-end">
                       <Badge className={statusColor[req.status] || ""}>{req.status}</Badge>
