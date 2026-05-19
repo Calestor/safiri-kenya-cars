@@ -107,7 +107,9 @@ const ListYourCar = () => {
   ];
 
   const onSubmit = (data: ListCarFormData) => {
-    console.log("Form Data:", data);
+    const existing = JSON.parse(localStorage.getItem("safiri_listings") || "[]");
+    const newListing = { ...data, id: Date.now().toString(), images: uploadedImages, createdAt: new Date().toISOString() };
+    localStorage.setItem("safiri_listings", JSON.stringify([...existing, newListing]));
     setSubmitted(true);
     setTimeout(() => {
       form.reset();

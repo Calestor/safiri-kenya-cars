@@ -7,7 +7,7 @@ import {
   Search,
   Calendar,
   CreditCard,
-  Drive,
+  Navigation,
   CheckCircle,
   Users,
   DollarSign,
@@ -35,7 +35,7 @@ const HowItWorks = () => {
       description: "Pay securely using M-Pesa, card, or bank transfer",
     },
     {
-      icon: <Drive className="w-8 h-8" />,
+      icon: <Navigation className="w-8 h-8" />,
       title: "Enjoy Your Ride",
       description: "Pick up your car and explore Kenya with confidence",
     },

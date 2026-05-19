@@ -17,7 +17,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <Car className="h-6 w-6 text-kenya-red" />
-            <span className="font-bold text-lg text-kenya-red">KenyaRide</span>
+            <span className="font-bold text-lg text-kenya-red">Safiri Kenya</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -38,12 +38,16 @@ const Navbar = () => {
 
           {/* Auth Buttons - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" className="border-kenya-red text-kenya-red hover:bg-kenya-red hover:text-white">
-              Log In
-            </Button>
-            <Button className="bg-kenya-red hover:bg-kenya-red/90 text-white">
-              Sign Up
-            </Button>
+            <Link to="/login">
+              <Button variant="outline" className="border-kenya-red text-kenya-red hover:bg-kenya-red hover:text-white">
+                Log In
+              </Button>
+            </Link>
+            <Link to="/signup">
+              <Button className="bg-kenya-red hover:bg-kenya-red/90 text-white">
+                Sign Up
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -92,17 +96,21 @@ const Navbar = () => {
               List Your Car
             </Link>
             <div className="pt-2 space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full border-kenya-red text-kenya-red hover:bg-kenya-red hover:text-white"
-              >
-                Log In
-              </Button>
-              <Button 
-                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white"
-              >
-                Sign Up
-              </Button>
+              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-kenya-red text-kenya-red hover:bg-kenya-red hover:text-white"
+                >
+                  Log In
+                </Button>
+              </Link>
+              <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                <Button 
+                  className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white"
+                >
+                  Sign Up
+                </Button>
+              </Link>
             </div>
           </div>
         )}

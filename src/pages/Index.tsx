@@ -40,13 +40,13 @@ const Index = () => {
               {
                 name: "Aisha Omar",
                 location: "Mombasa",
-                text: "As a tourist, I was worried about renting a car in Kenya, but KenyaRide made it so easy. The Suzuki Jimny I got was perfect for exploring the coast.",
+                text: "As a tourist, I was worried about renting a car in Kenya, but Safiri Kenya made it so easy. The Suzuki Jimny I got was perfect for exploring the coast.",
                 rating: 5
               },
               {
                 name: "Daniel Kipchoge",
                 location: "Eldoret",
-                text: "I use KenyaRide whenever I need a car for business trips. Their service is reliable and the car owners are professional. Great platform!",
+                text: "I use Safiri Kenya whenever I need a car for business trips. Their service is reliable and the car owners are professional. Great platform!",
                 rating: 4
               }
             ].map((testimonial, index) => (

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { 
   Select,
   SelectContent,
@@ -19,12 +19,23 @@ import { Calendar as CalendarIcon, Search, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 const SearchBar = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState("");
   const [pickupDate, setPickupDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
+  const [locationError, setLocationError] = useState(false);
   
   const handleSearch = () => {
-    console.log('Searching with:', { location, pickupDate, returnDate });
+    if (!location) {
+      setLocationError(true);
+      return;
+    }
+    setLocationError(false);
+    const params = new URLSearchParams();
+    params.set("location", location);
+    if (pickupDate) params.set("pickup", format(pickupDate, "yyyy-MM-dd"));
+    if (returnDate) params.set("return", format(returnDate, "yyyy-MM-dd"));
+    navigate(`/cars?${params.toString()}`);
   };
 
   const kenyaLocations = [
@@ -40,8 +51,8 @@ const SearchBar = () => {
         </label>
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Select onValueChange={setLocation}>
-            <SelectTrigger className="pl-10 w-full">
+          <Select value={location} onValueChange={(val) => { setLocation(val); setLocationError(false); }}>
+            <SelectTrigger className={`pl-10 w-full ${locationError ? "border-red-500" : ""}`}>
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
@@ -53,6 +64,9 @@ const SearchBar = () => {
             </SelectContent>
           </Select>
         </div>
+        {locationError && (
+          <p className="text-red-500 text-xs mt-1">Please select a location</p>
+        )}
       </div>
       
       <div className="md:w-[160px]">

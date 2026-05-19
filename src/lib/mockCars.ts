@@ -4,6 +4,7 @@ export interface Car {
   brand: string;
   model: string;
   year: number;
+  type: 'SUV' | 'Sedan' | 'Hatchback' | 'Minivan';
   image: string;
   images: string[];
   price: number;
@@ -30,6 +31,7 @@ export const mockCars: Car[] = [
     brand: 'Toyota',
     model: 'Prado TX',
     year: 2022,
+    type: 'SUV',
     image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=500&h=400&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop',
@@ -66,6 +68,7 @@ export const mockCars: Car[] = [
     brand: 'Suzuki',
     model: 'Jimny SZ5',
     year: 2021,
+    type: 'SUV',
     image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=500&h=400&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800&h=600&fit=crop',
@@ -101,6 +104,7 @@ export const mockCars: Car[] = [
     brand: 'Toyota',
     model: 'Corolla CVT',
     year: 2023,
+    type: 'Sedan',
     image: 'https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=500&h=400&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=800&h=600&fit=crop',
@@ -137,6 +141,7 @@ export const mockCars: Car[] = [
     brand: 'Nissan',
     model: 'X-Trail T31',
     year: 2020,
+    type: 'SUV',
     image: 'https://images.unsplash.com/photo-1464219414199-26ecb847e675?w=500&h=400&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1464219414199-26ecb847e675?w=800&h=600&fit=crop',
@@ -172,6 +177,7 @@ export const mockCars: Car[] = [
     brand: 'Honda',
     model: 'Civic EX',
     year: 2022,
+    type: 'Sedan',
     image: 'https://images.unsplash.com/photo-1513521399740-48416e8a0ffd?w=500&h=400&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1513521399740-48416e8a0ffd?w=800&h=600&fit=crop',

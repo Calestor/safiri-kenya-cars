@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarCard from "@/components/CarCard";
@@ -19,10 +19,12 @@ import { Search, Filter, X } from "lucide-react";
 
 const BrowseCars = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedCarType, setSelectedCarType] = useState("");
-  const [selectedTransmission, setSelectedTransmission] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(searchParams.get("location") || "all");
+  const [selectedCarType, setSelectedCarType] = useState("all");
+  const [selectedTransmission, setSelectedTransmission] = useState("all");
   const [priceRange, setPriceRange] = useState([2000, 6000]);
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
@@ -40,10 +42,10 @@ const BrowseCars = () => {
         car.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
         car.model.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesLocation = !selectedLocation || car.location === selectedLocation;
-      const matchesCarType = !selectedCarType || car.title.includes(selectedCarType);
+      const matchesLocation = selectedLocation === "all" || car.location === selectedLocation;
+      const matchesCarType = selectedCarType === "all" || car.type === selectedCarType;
       const matchesTransmission =
-        !selectedTransmission || car.transmission === selectedTransmission;
+        selectedTransmission === "all" || car.transmission === selectedTransmission;
       const matchesPrice = car.price >= priceRange[0] && car.price <= priceRange[1];
 
       return (
@@ -71,18 +73,18 @@ const BrowseCars = () => {
 
   const isFilterActive =
     searchQuery ||
-    selectedLocation ||
-    selectedCarType ||
-    selectedTransmission ||
+    selectedLocation !== "all" ||
+    selectedCarType !== "all" ||
+    selectedTransmission !== "all" ||
     priceRange[0] !== 2000 ||
     priceRange[1] !== 6000 ||
     sortBy !== "newest";
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedLocation("");
-    setSelectedCarType("");
-    setSelectedTransmission("");
+    setSelectedLocation("all");
+    setSelectedCarType("all");
+    setSelectedTransmission("all");
     setPriceRange([2000, 6000]);
     setSortBy("newest");
   };
@@ -156,7 +158,7 @@ const BrowseCars = () => {
                           <SelectValue placeholder="All locations" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Locations</SelectItem>
+                          <SelectItem value="all">All Locations</SelectItem>
                           {locations.map((location) => (
                             <SelectItem key={location} value={location}>
                               {location}
@@ -174,7 +176,7 @@ const BrowseCars = () => {
                           <SelectValue placeholder="All types" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Types</SelectItem>
+                          <SelectItem value="all">All Types</SelectItem>
                           {carTypes.map((type) => (
                             <SelectItem key={type} value={type}>
                               {type}
@@ -195,7 +197,7 @@ const BrowseCars = () => {
                           <SelectValue placeholder="All transmissions" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Transmissions</SelectItem>
+                          <SelectItem value="all">All Transmissions</SelectItem>
                           {transmissions.map((trans) => (
                             <SelectItem key={trans} value={trans}>
                               {trans}
