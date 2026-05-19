@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  X,
+  Expand,
 } from "lucide-react";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1200&h=800&fit=crop";
@@ -28,6 +30,8 @@ const CarDetails = () => {
   const [car, setCar] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     if (!carId) {
@@ -101,6 +105,30 @@ const CarDetails = () => {
     setCurrentImageIndex((prev) => (prev - 1 + imageCount) % imageCount);
   };
 
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const lightboxNext = useCallback(() => {
+    setLightboxIndex((prev) => (prev + 1) % (mappedCar?.images.length || 1));
+  }, [mappedCar]);
+
+  const lightboxPrev = useCallback(() => {
+    setLightboxIndex((prev) => (prev - 1 + (mappedCar?.images.length || 1)) % (mappedCar?.images.length || 1));
+  }, [mappedCar]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowRight") lightboxNext();
+      if (e.key === "ArrowLeft") lightboxPrev();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightboxOpen, lightboxNext, lightboxPrev]);
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -135,40 +163,72 @@ const CarDetails = () => {
       <Navbar />
 
       <div className="flex-1">
-        <div className="relative bg-gray-900 h-96">
-          <img
-            src={mappedCar.images[currentImageIndex]}
-            alt={mappedCar.title}
-            className="w-full h-full object-cover"
-          />
-          {mappedCar.images.length > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {mappedCar.images.map((_: string, index: number) => (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`w-2 h-2 rounded-full transition ${
-                  index === currentImageIndex ? "bg-white" : "bg-white/50"
-                }`}
-              />
-            ))}
+        {/* Main image + thumbnail strip */}
+        <div className="bg-gray-900">
+          <div className="relative h-96 cursor-pointer group" onClick={() => openLightbox(currentImageIndex)}>
+            <img
+              src={mappedCar.images[currentImageIndex]}
+              alt={mappedCar.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+              <Expand className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition" />
+            </div>
+            {mappedCar.images.length > 1 && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition">
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition">
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+            <div className="absolute bottom-3 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+              {currentImageIndex + 1} / {mappedCar.images.length}
+            </div>
           </div>
+
+          {/* Thumbnail strip */}
+          {mappedCar.images.length > 1 && (
+            <div className="flex gap-2 px-4 py-3 overflow-x-auto">
+              {mappedCar.images.map((img: string, i: number) => (
+                <button key={i} onClick={() => setCurrentImageIndex(i)}
+                  className={`flex-shrink-0 w-20 h-14 rounded overflow-hidden border-2 transition ${i === currentImageIndex ? "border-white" : "border-transparent opacity-60 hover:opacity-100"}`}>
+                  <img src={img} alt={`thumb ${i + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Lightbox modal */}
+        {lightboxOpen && (
+          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+            <button onClick={() => setLightboxOpen(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+              <X className="w-8 h-8" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); lightboxPrev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-3 rounded-full text-white transition">
+              <ChevronLeft className="w-7 h-7" />
+            </button>
+            <img
+              src={mappedCar.images[lightboxIndex]}
+              alt={`${mappedCar.title} ${lightboxIndex + 1}`}
+              className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button onClick={(e) => { e.stopPropagation(); lightboxNext(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-3 rounded-full text-white transition">
+              <ChevronRight className="w-7 h-7" />
+            </button>
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              {mappedCar.images.map((_: string, i: number) => (
+                <button key={i} onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
+                  className={`w-2 h-2 rounded-full transition ${i === lightboxIndex ? "bg-white" : "bg-white/40"}`} />
+              ))}
+            </div>
+            <div className="absolute bottom-6 right-6 text-white/60 text-sm">{lightboxIndex + 1} / {mappedCar.images.length}</div>
+          </div>
+        )}
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
