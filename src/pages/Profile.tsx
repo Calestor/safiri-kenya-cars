@@ -35,6 +35,7 @@ const Profile = () => {
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [licenseUrl, setLicenseUrl] = useState<string | null>(null);
+  const [licensePreview, setLicensePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -93,7 +94,13 @@ const Profile = () => {
   const handleLicenseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    uploadFile(file, "driver-licenses", "licenses", setLicenseUploading, (url) => setLicenseUrl(url));
+    // Show local preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setLicensePreview(previewUrl);
+    uploadFile(file, "driver-licenses", "licenses", setLicenseUploading, (url) => {
+      setLicenseUrl(url);
+      URL.revokeObjectURL(previewUrl);
+    });
   };
 
   const handleSave = async () => {
@@ -221,33 +228,72 @@ const Profile = () => {
           <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" /> Driver's License
           </h2>
-          {licenseUrl ? (
-            <div className="flex items-center gap-4">
-              <a href={licenseUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-kenya-red hover:underline text-sm">
-                <FileText className="h-5 w-5" />
-                View current license
-              </a>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => licenseInputRef.current?.click()}
-                disabled={licenseUploading}
-                className="text-xs"
-              >
-                {licenseUploading ? "Uploading…" : "Upload renewed license"}
-              </Button>
+
+          {/* Preview of newly selected image */}
+          {licensePreview && (
+            <div className="mb-4 relative">
+              <img
+                src={licensePreview}
+                alt="License preview"
+                className="w-full max-h-56 object-contain rounded-lg border border-gray-200 bg-gray-50"
+              />
+              {licenseUploading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40">
+                  <span className="h-7 w-7 block animate-spin border-4 border-white border-t-transparent rounded-full" />
+                </div>
+              )}
             </div>
-          ) : (
+          )}
+
+          {/* Existing saved license (no preview selected yet) */}
+          {!licensePreview && licenseUrl && (
+            <div className="mb-4">
+              <img
+                src={licenseUrl}
+                alt="Current driver's license"
+                className="w-full max-h-56 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {licenseUrl && !licensePreview && (
+              <a href={licenseUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-kenya-red hover:underline text-sm">
+                <FileText className="h-4 w-4" /> Open full document
+              </a>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => licenseInputRef.current?.click()}
+              disabled={licenseUploading}
+              className="text-xs"
+            >
+              {licenseUploading
+                ? "Uploading…"
+                : licenseUrl
+                ? "Upload renewed license"
+                : "Upload Driver's License"}
+            </Button>
+            {!licenseUrl && !licensePreview && (
+              <p className="text-xs text-gray-400">JPEG, PNG or PDF accepted</p>
+            )}
+          </div>
+
+          {/* Empty drop zone when nothing selected yet */}
+          {!licenseUrl && !licensePreview && (
             <button
               onClick={() => licenseInputRef.current?.click()}
               disabled={licenseUploading}
-              className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg py-8 hover:border-kenya-red transition cursor-pointer"
+              className="mt-3 flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg py-8 hover:border-kenya-red transition cursor-pointer"
             >
               <Upload className="h-7 w-7 text-gray-400 mb-2" />
-              <span className="text-sm text-gray-500">{licenseUploading ? "Uploading…" : "Upload Driver's License"}</span>
+              <span className="text-sm text-gray-500">Click to choose a file</span>
               <span className="text-xs text-gray-400 mt-1">JPEG, PNG or PDF</span>
             </button>
           )}
+
           <input ref={licenseInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleLicenseChange} />
         </div>
 

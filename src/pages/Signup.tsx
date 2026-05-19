@@ -15,12 +15,21 @@ const Signup = () => {
   const [confirm, setConfirm] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [driverLicense, setDriverLicense] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [licensePreview, setLicensePreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleFileChange = (setter: (file: File | null) => void) => (event: ChangeEvent<HTMLInputElement>) => {
-    setter(event.target.files?.[0] ?? null);
+  const handleFileChange = (
+    setter: (file: File | null) => void,
+    previewSetter?: (url: string | null) => void
+  ) => (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setter(file);
+    if (previewSetter) {
+      previewSetter(file ? URL.createObjectURL(file) : null);
+    }
   };
 
   const uploadFile = async (
@@ -182,38 +191,57 @@ const Signup = () => {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="profilePhoto">Profile Photo (Optional)</Label>
-                  <label
-                    htmlFor="profilePhoto"
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 transition hover:border-kenya-red hover:bg-red-50"
-                  >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-kenya-red shadow-sm">
-                      <Camera className="h-5 w-5" />
+                  {photoPreview ? (
+                    <div className="relative">
+                      <img src={photoPreview} alt="Photo preview" className="w-full h-36 object-cover rounded-xl border border-gray-200" />
+                      <label htmlFor="profilePhoto" className="absolute bottom-2 right-2 cursor-pointer bg-white rounded-full p-1.5 shadow text-kenya-red hover:bg-gray-50">
+                        <Camera className="h-4 w-4" />
+                      </label>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800">Upload avatar</p>
-                      <p className="truncate text-sm text-gray-500">{profilePhoto?.name || "PNG, JPG or JPEG image"}</p>
-                    </div>
-                    <Upload className="h-4 w-4 text-gray-400" />
-                  </label>
-                  <Input id="profilePhoto" type="file" accept="image/*" className="hidden" onChange={handleFileChange(setProfilePhoto)} />
+                  ) : (
+                    <label
+                      htmlFor="profilePhoto"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 transition hover:border-kenya-red hover:bg-red-50"
+                    >
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-kenya-red shadow-sm">
+                        <Camera className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800">Upload avatar</p>
+                        <p className="truncate text-sm text-gray-500">PNG, JPG or JPEG image</p>
+                      </div>
+                      <Upload className="h-4 w-4 text-gray-400" />
+                    </label>
+                  )}
+                  <Input id="profilePhoto" type="file" accept="image/*" className="hidden" onChange={handleFileChange(setProfilePhoto, setPhotoPreview)} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="driverLicense">Driver's License</Label>
-                  <label
-                    htmlFor="driverLicense"
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 transition hover:border-kenya-red hover:bg-red-50"
-                  >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-kenya-red shadow-sm">
-                      <FileText className="h-5 w-5" />
+                  <Label htmlFor="driverLicense">Driver's License <span className="text-red-500">*</span></Label>
+                  {licensePreview ? (
+                    <div className="relative">
+                      <img src={licensePreview} alt="License preview" className="w-full h-36 object-contain rounded-xl border border-gray-200 bg-gray-50" />
+                      <label htmlFor="driverLicense" className="absolute bottom-2 right-2 cursor-pointer bg-white rounded-full p-1.5 shadow text-kenya-red hover:bg-gray-50">
+                        <Upload className="h-4 w-4" />
+                      </label>
+                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">✓ License selected</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800">Upload license</p>
-                      <p className="truncate text-sm text-gray-500">{driverLicense?.name || "Required document"}</p>
-                    </div>
-                    <Upload className="h-4 w-4 text-gray-400" />
-                  </label>
-                  <Input id="driverLicense" type="file" accept="image/*" className="hidden" onChange={handleFileChange(setDriverLicense)} />
+                  ) : (
+                    <label
+                      htmlFor="driverLicense"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 transition hover:border-kenya-red hover:bg-red-50"
+                    >
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-kenya-red shadow-sm">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800">Upload license</p>
+                        <p className="truncate text-sm text-gray-500">Required document</p>
+                      </div>
+                      <Upload className="h-4 w-4 text-gray-400" />
+                    </label>
+                  )}
+                  <Input id="driverLicense" type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileChange(setDriverLicense, setLicensePreview)} />
                 </div>
               </div>
 
